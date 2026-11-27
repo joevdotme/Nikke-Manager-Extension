@@ -4,15 +4,23 @@ const loginBtn = document.getElementById("loginBtn");
 const statusEl = document.getElementById("status");
 const metaEl = document.getElementById("meta");
 
-const KEYS = ["status", "statusDetail", "lastFetched", "nikkeCount", "nikkeEquips"];
+const KEYS = ["status", "statusDetail", "lastFetched", "nikkeCount", "nikkeEquips", "missingNameCodes"];
 
-function render({ status, statusDetail, lastFetched, nikkeCount, nikkeEquips }) {
+function missingNamesText(codes) {
+    if (!Array.isArray(codes) || codes.length === 0) return "";
+    const noun = codes.length === 1 ? "name" : "names";
+    return `${codes.length} ${noun} missing from the map: ${codes.join(", ")}`;
+}
+
+function render({ status, statusDetail, lastFetched, nikkeCount, nikkeEquips, missingNameCodes }) {
     const notLoggedIn = status === "error" && statusDetail === "not_logged_in";
 
     statusEl.className = "status " + (status || "");
     statusEl.textContent = notLoggedIn
         ? "Not logged in to blablalink.com"
         : statusDetail || (status === "done" ? "Done" : "Ready");
+    const missingText = status === "done" ? missingNamesText(missingNameCodes) : "";
+    if (missingText) statusEl.textContent += `. ${missingText}`;
 
     fetchBtn.disabled = status === "fetching";
     downloadBtn.disabled = !nikkeEquips;
