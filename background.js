@@ -49,8 +49,10 @@ function processDetails(details, characters, nameMap) {
     }
 
     const result = {};
+    const missing = new Set();
     for (const detail of details.character_details) {
         const entry = nameMap[detail.name_code];
+        if (!entry?.name) missing.add(Number(detail.name_code));
         const resourceId = String(entry?.resourceId ?? detail.name_code);
         const nikkeName = entry?.name ?? `Nikke${detail.name_code}`;
         const char = charLookup[detail.name_code] ?? {};
@@ -88,7 +90,8 @@ function processDetails(details, characters, nameMap) {
         result[resourceId] = nikkeData;
     }
 
-    return result;
+    const missingNameCodes = [...missing].sort((a, b) => a - b);
+    return { result, missingNameCodes };
 }
 
 // Runs inside the blablalink.com page context - fetch calls use the page origin
@@ -175,6 +178,7 @@ async function scrapeInPage(apiBase) {
 
 async function runFetch() {
     setStatus("fetching", "Starting...");
+    chrome.storage.local.set({ missingNameCodes: [] });
     let scrapeTabId = null;
     let tabWasClosed = false;
     let onScrapeTabRemoved = null;
@@ -280,10 +284,15 @@ async function runFetch() {
         }
 
         setStatus("fetching", "Processing...");
-        const result = processDetails(pageResult.details, pageResult.characters, nameMap);
+        const { result, missingNameCodes } = processDetails(pageResult.details, pageResult.characters, nameMap);
         const count = Object.keys(result).length;
 
-        await chrome.storage.local.set({ nikkeEquips: result, lastFetched: Date.now(), nikkeCount: count });
+        await chrome.storage.local.set({
+            nikkeEquips: result,
+            lastFetched: Date.now(),
+            nikkeCount: count,
+            missingNameCodes,
+        });
         setStatus("fetching", "Sending to Gear Manager…");
         try {
             await sendToManager();
