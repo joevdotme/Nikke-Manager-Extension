@@ -36,7 +36,7 @@ git checkout -- nikke-names.json
 
 `scripts/open-name-pr.sh` pushes the data branch, opens the pull request, and enables auto-merge with `EXTENSION_GITHUB_TOKEN`, never `GITHUB_TOKEN`. A pull request opened with the default token does not start `names-validate`, so auto-merge would wait forever. Using the PAT is what makes the required check run.
 
-On `joevdotme/Nikke-Manager-Extension` the token is named `Nikke extension names`. Write its expiry date here when you create or rotate it: `____-__-__`.
+On `joevdotme/Nikke-Manager-Extension` the token is named `Nikke extension names`. It expires on Saturday, November 27, 2027. Regenerate it before that date and update this line.
 
 ### Scope and permissions
 
