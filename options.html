@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Nikke Manager Options</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                font-size: 13px;
+                color: #1a1a1a;
+                max-width: 520px;
+                margin: 24px auto;
+                padding: 0 16px;
+            }
+            h1 {
+                font-size: 16px;
+                font-weight: 600;
+            }
+            label {
+                display: block;
+                margin: 12px 0 6px;
+            }
+            input[type="url"] {
+                width: 100%;
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+            .hint {
+                color: #777;
+                font-size: 12px;
+            }
+            button {
+                margin-top: 14px;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 6px;
+                background: #1a73e8;
+                color: #fff;
+                font-size: 13px;
+                cursor: pointer;
+            }
+            #status {
+                margin-top: 12px;
+                min-height: 18px;
+            }
+            #status.error {
+                color: #c62828;
+            }
+            #status.done {
+                color: #2e7d32;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Nikke Manager Options</h1>
+        <label><input type="checkbox" id="devMode" /> Dev mode: send imports only to the URL below</label>
+        <p class="hint">
+            Dev mode off sends imports to localhost or pilgrimworks.github.io as usual. Dev mode on ignores
+            those, including tabs that are already open.
+        </p>
+        <label for="customManagerUrl">Custom manager URL</label>
+        <input type="url" id="customManagerUrl" placeholder="https://joevdotme.github.io/Nikke-Manager" />
+        <button id="saveBtn">Save</button>
+        <div id="status"></div>
+        <script src="options.js"></script>
+    </body>
+</html>

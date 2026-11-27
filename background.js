@@ -288,8 +288,13 @@ async function runFetch() {
         try {
             await sendToManager();
             setStatus("done", `${count} nikkes sent to Nikke Manager`);
-        } catch (_) {
-            setStatus("done", `${count} nikkes loaded`);
+        } catch (sendErr) {
+            const { devMode } = await chrome.storage.local.get("devMode");
+            if (devMode) {
+                setStatus("error", `${count} nikkes loaded, not sent: ${sendErr.message}`);
+            } else {
+                setStatus("done", `${count} nikkes loaded`);
+            }
         }
     } catch (err) {
         if (tabWasClosed || err.message === "tab_closed") {
@@ -311,8 +316,63 @@ const MANAGER_URLS = [
     "https://pilgrimworks.github.io/Nikke-Manager",
 ];
 
-async function resolveManagerUrl() {
-    for (const url of MANAGER_URLS) {
+function normalizeManagerUrl(url) {
+    return String(url ?? "").trim().replace(/\/+$/, "");
+}
+
+// A gitignored mode.json in the extension root (written by `make dev` / `make live`) seeds the
+// dev mode settings. It is applied only when its content changes, so a service-worker wake does
+// not undo a change made on the options page.
+async function syncModeFile() {
+    let text;
+    try {
+        const resp = await fetch(chrome.runtime.getURL("mode.json"));
+        if (!resp.ok) return;
+        text = await resp.text();
+    } catch {
+        return;
+    }
+    const { modeFileApplied } = await chrome.storage.local.get("modeFileApplied");
+    if (modeFileApplied === text) return;
+    let mode;
+    try {
+        mode = JSON.parse(text);
+    } catch {
+        return;
+    }
+    await chrome.storage.local.set({
+        devMode: mode.devMode === true,
+        customManagerUrl: normalizeManagerUrl(mode.customManagerUrl),
+        modeFileApplied: text,
+    });
+}
+
+const modeFileSynced = syncModeFile();
+
+// Dev mode off: the hardcoded list. Dev mode on: only the custom URL, never pilgrimworks or localhost.
+async function getManagerTargets() {
+    await modeFileSynced;
+    const { devMode, customManagerUrl } = await chrome.storage.local.get(["devMode", "customManagerUrl"]);
+    if (!devMode) return { devMode: false, urls: MANAGER_URLS };
+    const url = normalizeManagerUrl(customManagerUrl);
+    if (!url) throw new Error("Dev mode is on but no custom manager URL is set - open Options");
+    let origin;
+    try {
+        origin = new URL(url).origin;
+    } catch {
+        throw new Error(`Dev mode URL is not valid: ${url} - open Options`);
+    }
+    const granted = await chrome.permissions.contains({ origins: [`${origin}/*`] });
+    if (!granted) throw new Error(`No access to ${origin} yet - open Options and click Save to grant it`);
+    return { devMode: true, urls: [url] };
+}
+
+function tabMatches(tabUrl, base) {
+    return tabUrl === base || tabUrl.startsWith(`${base}/`) || tabUrl.startsWith(`${base}?`) || tabUrl.startsWith(`${base}#`);
+}
+
+async function resolveManagerUrl(urls) {
+    for (const url of urls) {
         try {
             const resp = await fetch(`${url}/nikke-manager-ping.json`, { signal: AbortSignal.timeout(2000) });
             if (!resp.ok) continue;
@@ -341,16 +401,24 @@ async function sendToManager() {
     const { nikkeEquips } = await chrome.storage.local.get("nikkeEquips");
     if (!nikkeEquips) throw new Error("No data - fetch first");
 
+    const { devMode, urls } = await getManagerTargets();
+
     // Find an already-open Gear Manager tab, or open the first reachable URL
     const allTabs = await chrome.tabs.query({});
-    let tab = allTabs.find((t) => t.url && MANAGER_URLS.some((u) => t.url.startsWith(u)));
+    let tab = allTabs.find((t) => t.url && urls.some((u) => tabMatches(t.url, u)));
 
     if (tab) {
         await chrome.tabs.update(tab.id, { active: true });
         if (tab.status !== "complete") await waitForTabComplete(tab.id);
     } else {
-        const url = await resolveManagerUrl();
-        if (!url) throw new Error("Nikke Manager app not found - is it running?");
+        const url = await resolveManagerUrl(urls);
+        if (!url) {
+            throw new Error(
+                devMode
+                    ? `Dev host ${urls[0]} did not answer nikke-manager-ping.json`
+                    : "Nikke Manager app not found - is it running?",
+            );
+        }
         tab = await chrome.tabs.create({ url, active: true });
         await waitForTabComplete(tab.id);
     }

@@ -12,6 +12,11 @@
         "http://localhost/*",
         "http://127.0.0.1/*"
     ],
+    "optional_host_permissions": ["https://*/*", "http://*/*"],
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    },
     "background": {
         "service_worker": "background.js"
     },
