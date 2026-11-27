@@ -38,15 +38,21 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
 
     // permissions.request must run inside the click handler, before any other await.
     let granted = false;
+    let requestError = null;
     try {
         granted = await chrome.permissions.request({ origins: [`${origin}/*`] });
     } catch (err) {
-        show("error", `Permission request failed: ${err.message}`);
+        requestError = err;
     }
     if (!granted) {
         devModeEl.checked = false;
         await chrome.storage.local.set({ devMode: false, customManagerUrl: url });
-        if (!statusEl.textContent) show("error", `Access to ${origin} was not granted. Dev mode stays off.`);
+        show(
+            "error",
+            requestError
+                ? `Permission request failed: ${requestError.message}`
+                : `Access to ${origin} was not granted. Dev mode stays off.`,
+        );
         return;
     }
 

@@ -23,7 +23,9 @@ try {
 const customManagerUrl = (mode === "dev" ? urlArg || DEFAULT_DEV_URL : urlArg || previousUrl || DEFAULT_DEV_URL)
     .trim()
     .replace(/\/+$/, "");
-const body = { devMode: mode === "dev", customManagerUrl };
+// writtenAt changes on every write. syncModeFile reapplies mode.json only when its text
+// changes, so a later `make dev` with the same URL still wins after Options turns dev mode off.
+const body = { devMode: mode === "dev", customManagerUrl, writtenAt: Date.now() };
 fs.writeFileSync(file, JSON.stringify(body, null, 4) + "\n");
 
 console.log(`Wrote ${path.relative(process.cwd(), file) || file}: ${JSON.stringify(body)}`);
