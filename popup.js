@@ -44,3 +44,8 @@ downloadBtn.addEventListener("click", () => {
 loginBtn.addEventListener("click", () => {
     chrome.tabs.create({ url: "https://www.blablalink.com/login" });
 });
+
+document.getElementById("optionsLink").addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.runtime.openOptionsPage();
+});
