@@ -61,3 +61,9 @@ The extension fetches the following data for every character in your account:
 Each occupied stat line is `{ "stat": "<name>", "value": <number>, "display": "<percent>" }`.
 
 Stat names: `ATK`, `Elemental Dmg`, `Hit Rate`, `Charge Dmg`, `Charge Speed`, `Critical Rate`, `Critical Dmg`, `Max Ammo`, `DEF`.
+
+---
+
+## Packaging for the store
+
+The repository root is the extension, but these paths are tooling only and must be left out of a store zip: `scripts/`, `.github/`, `docs/`, `.cursor/`, `Makefile`, and `mode.json`.
