@@ -1,0 +1,34 @@
+name: names-update
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: names-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'joevdotme/Nikke-Manager-Extension'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # workflow_dispatch can select any branch. The data PR is cut from
+          # this checkout and squash-merged to main, so start from main.
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Refresh name map
+        run: node scripts/refresh-name-map.js
+      - name: Open data pull request
+        env:
+          EXTENSION_GITHUB_TOKEN: ${{ secrets.EXTENSION_GITHUB_TOKEN }}
+        run: bash scripts/open-name-pr.sh
